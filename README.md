@@ -94,5 +94,4 @@
 과연 정말 쓰레드 세이프 할까?
 어떻게하면 진정한 동시성을 달성할 수 있을까?
 
-**이후 내용은 소스코드에서 설명**# Designing-lock-based-concurrent-data-structure
-# Designing-lock-based-concurrent-data-structure
+**이후 내용은 소스코드에서 설명**
