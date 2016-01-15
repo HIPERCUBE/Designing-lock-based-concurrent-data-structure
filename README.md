@@ -101,3 +101,5 @@
 * [Listing6_2](https://github.com/HIPERCUBE/Designing-lock-based-concurrent-data-structure/blob/master/Listing/Listing6_2.cpp)
 * [Listing6_3](https://github.com/HIPERCUBE/Designing-lock-based-concurrent-data-structure/blob/master/Listing/Listing6_3.cpp)
 * [Listing6_4](https://github.com/HIPERCUBE/Designing-lock-based-concurrent-data-structure/blob/master/Listing/Listing6_4.cpp)
+* [Listing6_5](https://github.com/HIPERCUBE/Designing-lock-based-concurrent-data-structure/blob/master/Listing/Listing6_5.cpp)
+* [Listing6_6](https://github.com/HIPERCUBE/Designing-lock-based-concurrent-data-structure/blob/master/Listing/Listing6_6.cpp)
