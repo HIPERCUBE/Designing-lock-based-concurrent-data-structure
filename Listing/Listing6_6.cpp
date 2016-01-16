@@ -80,3 +80,19 @@ public:
 // get_tail()의 호출은 push()의 호출과 같이 같은 뮤텍스를 잠그기때문에, 두 호출사이에 순서가 정의되어있다.
 // tail의 전 값을 볼경우에는 get_tail()의 호출이 push()전에 일어나고,
 // tail의 새 값을 보고 전 tail의 값을 새 데이터에 넣을때는, push()이후에 일어난다.
+
+// get_tail()의 호출이 head_mutex 작금안에서 일어나는것도 중요하다
+// 만약 그렇지 않으면, pop_head()호출은 get_tail()과 head_mutex의 자금 사이에서 stuck 될수 있다.
+// 다른 쓰레드들이 try_pop()을 호출하고 잠금을 먼저 필요로 하기 때문에, 초기 쓰레드는 다음 과정으로 만들어야한다.
+
+// std::unique_ptr<node> pop_head() {                       // 이건 잘못된 구현이다.
+//     node* const old_tail = get_tail();                   // [1] head_mutex잠금 밖에서 old tail의 값을 가져온다.
+//     std::lock_guard<std::mutex> head_lock(head_mutex);
+//
+//     if (head.get() == get_tail()) {                      // [2]
+//         return nullptr;
+//     }
+//     std::unique_ptr<node> old_head = std::move(head);
+//     head = std::move(old_head->next);                    // [3]
+//     return old_head;
+// }
