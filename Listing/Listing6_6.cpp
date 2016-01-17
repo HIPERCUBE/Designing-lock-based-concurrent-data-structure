@@ -96,3 +96,8 @@ public:
 //     head = std::move(old_head->next);                    // [3]
 //     return old_head;
 // }
+
+// 이 잘못된 시나리오에서 get_tail(0) 호출은 잠금의 범위에서 벗어났다.
+// head와 tail 둘다 초기 쓰레드가 head_mutex의 잠금을 요구할때 변했다.
+// 반환된 tail 노드가 더이상 tail 노드는 아니지만, 리스트의 일부분도 아니다.
+//
