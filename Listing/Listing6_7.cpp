@@ -1,41 +1,55 @@
-   #include <memory>
+#include <memory>
+#include <__mutex_base>
 
-   template<typename T>
-   class queue {
-   private:
-       struct node {
-   /* 1 */ std::shared_ptr<T> data;
-           std::unique_ptr<node> next;
-       };
+template<typename T>
+class threadsafe_queue {
+private:
+    struct node {
+        std::shared_ptr<T> data;
+        std::unique_ptr<node> next;
+    };
 
-       std::unique_ptr<node> head;
-       node* tail;
+    std::mutex head_mutex;
+    std::unique_ptr<node> head;
+    std::mutex tail_mutex;
+    node* tail;
 
-   public:
-       /* 2 */
-       queue() : head(new node), tail(head.get()) { }
+    node* get_tail() {
+        std::lock_guard<std::mutex> tail_lock(tail_mutex);
+        return tail;
+    }
 
-       queue(const queue& other) = delete;
+    std::unique_ptr<node> pop_head() {
+        std::lock_guard<std::mutex> head_lock(head_mutex);
 
-       queue& operator=(const queue& other) = delete;
+        if (head.get() == get_tail()) {
+            return nullptr;
+        }
+        std::unique_ptr<node> old_head = std::move(head);
+        head = std::move(old_head->next);
+        return old_head;
+    }
 
-       std::shared_ptr<T> try_pop() {
-   /* 3 */ if (head.get() == tail) {
-               return std::shared_ptr<T>();
-           }
-   /* 4 */ std::shared_ptr<T> const res(head->data);
-           std::unique_ptr<node> old_head = std::move(head);
-   /* 5 */ head = std::move(old_head->next);
-   /* 6 */ return res;
-       }
+public:
+    threadsafe_queue() : head(new node), tail(head.get()) { }
 
-       void push(T new_value) {
-   /* 7 */ std::shared_ptr<T> new_data(std::make_shared<T>(std::move(new_value)));
-   /* 8 */ std::unique_ptr<node> p(new node);
-   /* 9 */ tail->data = new_data;
-           node* const new_tail = p.get();
-           tail->next = std::move(p);
-           tail = new_tail;
-       }
-   };
+    threadsafe_queue(const threadsafe_queue& other) = delete;
+
+    threadsafe_queue& operator=(const threadsafe_queue& other) = delete;
+
+    std::shared_ptr<T> try_pop() {
+        std::unique_ptr<node> old_head = pop_head();
+        return old_head ? old_head : std::shared_ptr<T>();
+    }
+
+    void push(T new_value) {
+        std::shared_ptr<T> new_data(std::make_shared<T>(std::move(new_value)));
+        std::unique_ptr<node> p(new node);
+        node* const new_tail = p.get();
+        std::lock_guard<std::mutex> tail_lock(tail_mutex);
+        tail->data = new_data;
+        tail->next = std::move(p);
+        tail = new_value;
+    }
+};
 
