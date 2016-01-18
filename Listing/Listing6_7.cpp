@@ -1,58 +1,41 @@
-#include <__mutex_base>
-#include <queue>
+   #include <memory>
 
-template<typename T>
-class threadsafe_queue {
-private:
-    mutable std::mutex mut;
-    std::queue<std::shared_ptr<T>> data_queue;
-    std::condition_variable data_cond;
-public:
-    threadsafe_queue() { }
+   template<typename T>
+   class queue {
+   private:
+       struct node {
+   /* 1 */ std::shared_ptr<T> data;
+           std::unique_ptr<node> next;
+       };
 
-    void wait_and_pop(T& value) {
-        std::unique_lock<std::mutex> lk(mut);
-        data_cond.wait(lk, [this] { return !data_queue.empty(); });
-/* 1 */ value = std::move(*data_queue.front());
-        data_queue.pop();
-    }
+       std::unique_ptr<node> head;
+       node* tail;
 
-    bool try_pop(T& value) {
-        std::lock_guard<std::mutex> lk(mut);
-        if (data_queue.empty())
-            return false;
-/* 2 */ value = std::move(*data_queue.front());
-        data_queue.pop();
-        return true;
-    }
+   public:
+       /* 2 */
+       queue() : head(new node), tail(head.get()) { }
 
-    std::shared_ptr<T> wait_and_pop() {
-        std::unique_lock<std::mutex> lk(mut);
-        data_cond.wait(lk, [this] { return !data_queue.empty(); });
-/* 3 */ std::shared_ptr<T> res = data_queue.front();
-        data_queue.pop();
-        return res;
-    }
+       queue(const queue& other) = delete;
 
-    std::shared_ptr<T> try_pop() {
-        std::lock_guard<std::mutex> lk(mut);
-        if (data_queue.empty())
-            return std::shared_ptr<T>();
-/* 4 */ std::shared_ptr<T> res = data_queue.front();
-        data_queue.pop();
-        return res;
-    }
+       queue& operator=(const queue& other) = delete;
 
-    void push(T new_value) {
-/* 5 */ std::shared_ptr<T> data(std::make_shared<T>(std::move(new_value)));
-        std::lock_guard<std::mutex> lk(mut);
-        data_queue.push(data);
-        data_cond.notify_one();
-    }
+       std::shared_ptr<T> try_pop() {
+   /* 3 */ if (head.get() == tail) {
+               return std::shared_ptr<T>();
+           }
+   /* 4 */ std::shared_ptr<T> const res(head->data);
+           std::unique_ptr<node> old_head = std::move(head);
+   /* 5 */ head = std::move(old_head->next);
+   /* 6 */ return res;
+       }
 
-    bool empty() const {
-        std::lock_guard<std::mutex> lk(mut);
-        return data_queue.empty();
-    }
-};
+       void push(T new_value) {
+   /* 7 */ std::shared_ptr<T> new_data(std::make_shared<T>(std::move(new_value)));
+   /* 8 */ std::unique_ptr<node> p(new node);
+   /* 9 */ tail->data = new_data;
+           node* const new_tail = p.get();
+           tail->next = std::move(p);
+           tail = new_tail;
+       }
+   };
 
