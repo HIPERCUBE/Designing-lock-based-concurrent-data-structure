@@ -30,6 +30,18 @@ private:
         return old_head;
     }
 
+    std::unique_ptr<node> pop_head() {                       // 이건 잘못된 구현이다.
+        node* const old_tail = get_tail();                   // [1] head_mutex잠금 밖에서 old tail의 값을 가져온다.
+        std::lock_guard<std::mutex> head_lock(head_mutex);
+
+        if (head.get() == old_tail) {                      // [2]
+            return nullptr;
+        }
+        std::unique_ptr<node> old_head = std::move(head);
+        head = std::move(old_head->next);                    // [3]
+        return old_head;
+    }
+
 public:
     threadsafe_queue() : head(new node), tail(head.get()) { }
 
