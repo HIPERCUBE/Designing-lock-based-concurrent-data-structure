@@ -89,7 +89,7 @@ public:
 //     node* const old_tail = get_tail();                   // [1] head_mutex잠금 밖에서 old tail의 값을 가져온다.
 //     std::lock_guard<std::mutex> head_lock(head_mutex);
 //
-//     if (head.get() == get_tail()) {                      // [2]
+//     if (head.get() == old_tail) {                      // [2]
 //         return nullptr;
 //     }
 //     std::unique_ptr<node> old_head = std::move(head);
@@ -97,7 +97,8 @@ public:
 //     return old_head;
 // }
 
-// 이 잘못된 시나리오에서 get_tail(0) 호출은 잠금의 범위에서 벗어났다.
-// head와 tail 둘다 초기 쓰레드가 head_mutex의 잠금을 요구할때 변했다.
-// 반환된 tail 노드가 더이상 tail 노드는 아니지만, 리스트의 일부분도 아니다.
-//
+// 이 broken 시나리오에서 get_tail()을 잠금 밖에서 호출하고 있다
+// initial 쓰레드가 head_mutex에 잠금을 요청할때 head와 tail을 수정해버려서,
+// get_tail()에서 반환받은 tail 노드가 더이상 tail 노드가 아닐 뿐만 아니라, 리스트의 노드도 아니게된다.
+// 그러면 head와 old_tail의 비교는 실패하게된다.
+// 결과적으로 head를 업데이트할때 head를 tail 너머의 리스트 밖으로 보낼 수 있기 때문에 자료구조가 파괴된다
